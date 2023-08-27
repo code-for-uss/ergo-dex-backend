@@ -5,10 +5,10 @@ import org.ergoplatform.ErgoLikeTransaction
 import org.ergoplatform.dex.domain.DexOperatorOutput
 import org.ergoplatform.dex.domain.amm.CFMMOrder._
 import org.ergoplatform.dex.domain.amm.CFMMOrderType.{DepositType, RedeemType, SwapType}
-import org.ergoplatform.dex.domain.amm.{CFMMOrder, CFMMPool}
+import org.ergoplatform.dex.domain.amm.{CFMMOrder, CFMMPool, PoolId}
 import org.ergoplatform.dex.executor.amm.interpreters.v1.InterpreterV1
 import org.ergoplatform.dex.executor.amm.interpreters.v3.InterpreterV3
-import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2T_CFMM, T2T_CFMM}
+import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
 import org.ergoplatform.ergo.domain.Output
 import org.ergoplatform.ergo.state.{Predicted, Traced}
 import tofu.higherKind.{Mid, RepresentableK}
@@ -46,6 +46,7 @@ object CFMMInterpreter {
   def make[I[_]: Functor, F[_]: Monad](implicit
     n2t: InterpreterV1[N2T_CFMM, F],
     t2t: InterpreterV1[T2T_CFMM, F],
+    n2dexy: InterpreterV1[N2Dexy_CFMM, F],
     n2tV3: InterpreterV3[N2T_CFMM, F],
     t2tV3: InterpreterV3[T2T_CFMM, F],
     logs: Logs[I, F]
@@ -58,6 +59,7 @@ object CFMMInterpreter {
     n2tV1: InterpreterV1[N2T_CFMM, F],
     t2tV1: InterpreterV1[T2T_CFMM, F],
     n2tV3: InterpreterV3[N2T_CFMM, F],
+    n2dexyV1: InterpreterV1[N2Dexy_CFMM, F],
     t2tV3: InterpreterV3[T2T_CFMM, F]
   ) extends CFMMInterpreter[CFMMType, F] {
 
@@ -68,6 +70,7 @@ object CFMMInterpreter {
       in match {
         case d: DepositErgFee =>
           if (pool.isNative) n2tV1.deposit(d, pool)
+          else if (pool.poolId == PoolId.fromStringUnsafe("110f9834127df07e142d7386b34a9debd22d3573ab1b751c9825fa8b798acd74")) n2dexyV1.deposit(d, pool)
           else t2tV1.deposit(d, pool)
         case d: DepositTokenFee => if (pool.isNative) n2tV3.deposit(d, pool) else t2tV3.deposit(d, pool)
       }
@@ -79,6 +82,7 @@ object CFMMInterpreter {
       in match {
         case r: RedeemErgFee =>
           if (pool.isNative) n2tV1.redeem(r, pool)
+          else if (pool.poolId == PoolId.fromStringUnsafe("110f9834127df07e142d7386b34a9debd22d3573ab1b751c9825fa8b798acd74")) n2dexyV1.redeem(r, pool)
           else t2tV1.redeem(r, pool)
         case r: RedeemTokenFee => if (pool.isNative) n2tV3.redeem(r, pool) else t2tV3.redeem(r, pool)
       }
@@ -90,6 +94,7 @@ object CFMMInterpreter {
       in match {
         case s: SwapErg =>
           if (pool.isNative) n2tV1.swap(s, pool)
+          else if (pool.poolId == PoolId.fromStringUnsafe("110f9834127df07e142d7386b34a9debd22d3573ab1b751c9825fa8b798acd74")) n2dexyV1.swap(s, pool)
           else t2tV1.swap(s, pool)
         case s: SwapTokenFee => if (pool.isNative) n2tV3.swap(s, pool) else t2tV3.swap(s, pool)
       }

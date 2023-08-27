@@ -1,7 +1,7 @@
 package org.ergoplatform.dex.tracker.parsers.amm.pools
 
 import org.ergoplatform.dex.domain.amm.CFMMPool
-import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2T_CFMM, T2T_CFMM}
+import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
 import org.ergoplatform.ergo.domain.Output
 
 trait CFMMPoolsParser[+CT <: CFMMType] {
@@ -15,4 +15,5 @@ object CFMMPoolsParser {
 
   implicit val t2tCfmmPoolParser: CFMMPoolsParser[T2T_CFMM] = T2TCFMMPoolsParser
   implicit val n2tCfmmPoolParser: CFMMPoolsParser[N2T_CFMM] = N2TCFMMPoolsParser
+  implicit val n2dexyCfmmPoolParser: CFMMPoolsParser[N2Dexy_CFMM] = N2DexyCFMMPoolsParser
 }

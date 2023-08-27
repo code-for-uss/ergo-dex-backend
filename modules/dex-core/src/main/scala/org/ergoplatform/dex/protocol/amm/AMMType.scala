@@ -6,4 +6,5 @@ object AMMType {
   trait CFMMType extends AMMType
   trait T2T_CFMM extends CFMMType
   trait N2T_CFMM extends CFMMType
+  trait N2Dexy_CFMM extends CFMMType
 }

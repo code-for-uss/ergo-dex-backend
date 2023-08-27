@@ -25,7 +25,8 @@ object constants {
     T2TCFMMTemplates.depositLegacyV0,
     ergoBaseOutput,
     ErgoTreeTemplate.fromBytes(AMMContracts.N2TCFMMContracts.pool.template),
-    ErgoTreeTemplate.fromBytes(AMMContracts.T2TCFMMContracts.pool.template)
+    ErgoTreeTemplate.fromBytes(AMMContracts.T2TCFMMContracts.pool.template),
+    ErgoTreeTemplate.fromBytes(AMMContracts.N2DexyCFMMContracts.pool.template)
   )
 
   def ergoBaseOutput: ErgoTreeTemplate =
@@ -44,6 +45,12 @@ object constants {
     }
 
     object n2t {
+      val IndexNFT = 0
+      val IndexLP  = 1
+      val IndexY   = 2
+    }
+
+    object n2dexy {
       val IndexNFT = 0
       val IndexLP  = 1
       val IndexY   = 2

@@ -5,7 +5,7 @@ import mouse.any._
 import org.ergoplatform.common.streaming.{Producer, Record}
 import org.ergoplatform.ergo.state.{Confirmed, LedgerStatus}
 import org.ergoplatform.dex.domain.amm.{CFMMPool, PoolId}
-import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2T_CFMM, T2T_CFMM}
+import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
 import org.ergoplatform.dex.tracker.parsers.amm.pools.CFMMPoolsParser
 import tofu.logging.{Logging, Logs}
 import tofu.streams.Evals
@@ -42,7 +42,8 @@ object CFMMPoolsHandler {
     logs.forService[CFMMPoolsHandler[F, G, Status]].map { implicit log =>
       val parsers =
         CFMMPoolsParser[T2T_CFMM] ::
-        CFMMPoolsParser[N2T_CFMM] :: Nil
+        CFMMPoolsParser[N2T_CFMM] ::
+        CFMMPoolsParser[N2Dexy_CFMM] :: Nil
       new CFMMPoolsHandler[F, G, Status](parsers).handler
     }
 }

@@ -11,7 +11,7 @@ import org.ergoplatform.dex.configs.ConsumerConfig
 import org.ergoplatform.dex.domain.amm.{CFMMOrder, OrderId}
 import org.ergoplatform.dex.executor.amm.config.ConfigBundle
 import org.ergoplatform.dex.executor.amm.context.AppContext
-import org.ergoplatform.dex.executor.amm.interpreters.v1.{InterpreterV1, N2TCFMMInterpreter, T2TCFMMInterpreter}
+import org.ergoplatform.dex.executor.amm.interpreters.v1.{InterpreterV1, N2TCFMMInterpreter, T2TCFMMInterpreter, N2DexyCFMMInterpreter}
 import org.ergoplatform.dex.executor.amm.interpreters.v3.InterpreterV3
 import org.ergoplatform.dex.executor.amm.interpreters.v3.n2t.N2TV3
 import org.ergoplatform.dex.executor.amm.interpreters.v3.t2t.T2TV3
@@ -20,7 +20,7 @@ import org.ergoplatform.dex.executor.amm.processes.{Executor, NetworkContextUpda
 import org.ergoplatform.dex.executor.amm.repositories.CFMMPools
 import org.ergoplatform.dex.executor.amm.services.{DexOutputResolver, Execution}
 import org.ergoplatform.dex.executor.amm.streaming._
-import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2T_CFMM, T2T_CFMM}
+import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
 import org.ergoplatform.ergo.modules.ErgoNetwork
 import org.ergoplatform.ergo.services.explorer.{ErgoExplorer, ErgoExplorerStreaming}
 import org.ergoplatform.ergo.services.node.ErgoNode
@@ -74,6 +74,8 @@ object App extends EnvApp[AppContext] {
         Resource.eval(T2TCFMMInterpreter.make[InitF, RunF])
       implicit0(n2tInt: InterpreterV1[N2T_CFMM, RunF]) <-
         Resource.eval(N2TCFMMInterpreter.make[InitF, RunF])
+      implicit0(n2dexyInt: InterpreterV1[N2Dexy_CFMM, RunF]) <-
+        Resource.eval(N2DexyCFMMInterpreter.make[InitF, RunF])
       implicit0(n2tInt: InterpreterV3[N2T_CFMM, RunF]) <-
         Resource.eval(N2TV3.make[InitF, RunF](configs.exchange, configs.monetary, context))
       implicit0(n2tInt: InterpreterV3[T2T_CFMM, RunF]) <-
