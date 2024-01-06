@@ -20,7 +20,8 @@ final case class ConfigBundle(
   producers: Producers,
   @promote kafka: KafkaConfig,
   @promote network: NetworkConfig,
-  @promote resolver: ResolverConfig
+  @promote resolver: ResolverConfig,
+  @promote dexy: DexyConfig
 )
 
 object ConfigBundle extends Context.Companion[ConfigBundle] with ConfigBundleCompanion[ConfigBundle]

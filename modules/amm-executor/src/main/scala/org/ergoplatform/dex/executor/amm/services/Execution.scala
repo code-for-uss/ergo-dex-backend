@@ -1,5 +1,6 @@
 package org.ergoplatform.dex.executor.amm.services
 
+import cats.data.OptionT
 import cats.syntax.option._
 import cats.{Functor, Monad}
 import org.ergoplatform.dex.domain.amm.CFMMOrder.AnyOrder
@@ -15,6 +16,7 @@ import tofu.logging.{Logging, Logs}
 import tofu.syntax.handle._
 import tofu.syntax.logging._
 import tofu.syntax.monadic._
+import tofu.syntax.streams.all.eval
 
 trait Execution[F[_]] {
 
@@ -31,6 +33,7 @@ object Execution {
     interpreter: CFMMInterpreter[CFMMType, F],
     network: ErgoNetwork[F],
     resolver: DexOutputResolver[F],
+    dexyResolver: DexyOutputResolver[F],
     logs: Logs[I, F]
   ): I[Execution[F]] =
     logs.forService[Execution[F]].map(implicit l => new Live[F])
@@ -40,6 +43,7 @@ object Execution {
     interpreter: CFMMInterpreter[CFMMType, F],
     network: ErgoNetwork[F],
     resolver: DexOutputResolver[F],
+    dexyResolver: DexyOutputResolver[F],
     errParser: TxSubmissionErrorParser
   ) extends Execution[F] {
 
@@ -55,32 +59,42 @@ object Execution {
           }
           val executeF =
             for {
-              _                                  <- info"Pool is: $pool ${pool.isNative} -> $order "
-              (transaction, nextPool, nextOrder) <- interpretF
-              finalizeF =
-                network.submitTransaction(transaction) >> pools.put(nextPool) >> resolver.setPredicted(
-                  nextOrder.state.entity.output
-                )
+              _                                            <- info"Pool is: $pool ${pool.isNative} -> $order "
+              (transaction, nextPool, nextOrder, nextDexy) <- interpretF
+              finalizeF = network.submitTransaction(transaction) >> pools.put(nextPool) >> resolver.setPredicted(
+                            nextOrder.state.entity.output
+                          ) >> {
+                            if (nextDexy.isDefined) dexyResolver.setPredicted(nextDexy.get.state.entity.output)
+                            else ???
+                          }
               res <- (finalizeF as none[CFMMOrder.AnyOrder])
                        .handleWith[TxFailed] { e =>
                          info"Error is: ${e.getMessage}" >>
                          resolver.getLatest.flatMap { output =>
-                           val invalidInputs    = errParser.missedInputs(e.reason)
-                           val poolBoxId        = pool.box.boxId
-                           val invalidPool      = invalidInputs.contains(TxSubmissionErrorParser.InvalidPoolIndex)
-                           val invalidDexOutput = invalidInputs.contains(TxSubmissionErrorParser.InvalidDexOutputIndex)
-                           if (invalidPool && invalidDexOutput) {
-                             warnCause"PoolState{poolId=${pool.poolId}, boxId=$poolBoxId} is invalidated. And dex output ${output
-                               .map(_.boxId)} is invalidated" (e) >>
-                             pools.invalidate(pool.poolId, poolBoxId) >> resolver.invalidateAndUpdate as order.some
-                           } else if (invalidPool)
-                             warnCause"PoolState{poolId=${pool.poolId}, boxId=$poolBoxId} is invalidated" (e) >>
+                           val invalidInputs = errParser.missedInputs(e.reason)
+                           val poolBoxId     = pool.box.boxId
+                           val invalidPool   = invalidInputs.contains(TxSubmissionErrorParser.InvalidPoolIndex)
+                           val invalidDexOutput =
+                             if (pool.isDexy) invalidInputs.contains(TxSubmissionErrorParser.InvalidDexOutputIndex + 1)
+                             else invalidInputs.contains(TxSubmissionErrorParser.InvalidDexOutputIndex)
+                           val invalidDexyOutput =
+                             if (pool.isDexy) invalidInputs.contains(TxSubmissionErrorParser.InvalidDexyOutputIndex)
+                             else false
+
+                           val f: F[Option[CFMMOrder[CFMMOrderType]]] = Option.empty[CFMMOrder[CFMMOrderType]].pure
+                           if (invalidPool)
+                             f >> warnCause"PoolState{poolId=${pool.poolId}, boxId=$poolBoxId} is invalidated" (e) >>
                              pools.invalidate(pool.poolId, poolBoxId) as order.some
-                           else if (invalidDexOutput)
-                             warnCause"Dex output ${output.map(_.boxId)} is invalidated" (e) >>
+                           if (invalidDexOutput)
+                             f >> warnCause"Dex output ${output.map(_.boxId)} is invalidated" (e) >>
                              resolver.invalidateAndUpdate as order.some
-                           else
-                             warnCause"Order{id=${order.id}} is discarded due to TX error" (e) as none[AnyOrder]
+                           if (invalidDexyOutput) dexyResolver.getLatest.flatMap { dexyOutput =>
+                             f >> warnCause"Dexy output ${dexyOutput.map(_.boxId)} is invalidated" (e) >>
+                             dexyResolver.invalidateAndUpdate as order.some
+                           }
+                           if (!invalidPool && !invalidDexOutput && !invalidDexyOutput)
+                             f >> warnCause"Order{id=${order.id}} is discarded due to TX error" (e) as none[AnyOrder]
+                           f
                          }
                        }
             } yield res

@@ -9,6 +9,8 @@ object constants {
     N2TCFMMTemplates.redeemV1,
     N2TCFMMTemplates.swapBuyLegacyV0,
     N2TCFMMTemplates.swapBuyV1,
+    N2DexyCFMMTemplates.swapBuyV1,
+    N2DexyCFMMTemplates.swapSellV1,
     N2TCFMMTemplates.swapSellLegacyV0,
     N2TCFMMTemplates.swapSellV1,
     N2TCFMMTemplates.depositLegacyV1,
@@ -51,9 +53,10 @@ object constants {
     }
 
     object n2dexy {
-      val IndexNFT = 0
-      val IndexLP  = 1
-      val IndexY   = 2
+      val IndexNFT       = 0
+      val IndexLP        = 1
+      val IndexY         = 2
+      val DexyUSDAssetId = "0d69a552b30df9be519099ec07682039b0610267aaee48d2a1d3dad398287ef5"
     }
   }
 }

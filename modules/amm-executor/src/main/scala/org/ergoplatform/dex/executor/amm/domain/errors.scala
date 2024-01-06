@@ -33,6 +33,11 @@ object errors {
       s"There is no output for make box with spf fee."
     )
 
+  final case class EmptyOutputForSwapDexy(poolId: PoolId)
+    extends ExecutionFailed(
+      s"There is no output for make dexy swap box."
+    )
+
   final case class NegativeDexFee(poolId: PoolId, orderId: OrderId, dexFee: Long)
     extends ExecutionFailed(
       s"Dex fee is negative ${dexFee} for pool: $poolId, order: $orderId."

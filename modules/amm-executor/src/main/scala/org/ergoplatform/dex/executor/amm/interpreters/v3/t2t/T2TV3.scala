@@ -3,7 +3,7 @@ package org.ergoplatform.dex.executor.amm.interpreters.v3.t2t
 import cats.effect.concurrent.Ref
 import cats.{Functor, Monad}
 import org.ergoplatform.dex.configs.MonetaryConfig
-import org.ergoplatform.dex.domain.{DexOperatorOutput, NetworkContext}
+import org.ergoplatform.dex.domain.{NetworkContext, ResolverOutput}
 import org.ergoplatform.dex.domain.amm.CFMMOrder._
 import org.ergoplatform.dex.domain.amm.CFMMPool
 import org.ergoplatform.dex.executor.amm.config.ExchangeConfig
@@ -44,7 +44,14 @@ object T2TV3 {
         def deposit(
           deposit: DepositTokenFee,
           pool: CFMMPool
-        ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+        ): F[
+          (
+            ErgoLikeTransaction,
+            Traced[Predicted[CFMMPool]],
+            Traced[Predicted[ResolverOutput]],
+            Option[Traced[Predicted[ResolverOutput]]]
+          )
+        ] =
           resolver.getLatest
             .flatMap(_.orRaise[F](EmptyOutputForDexTokenFee(pool.poolId, deposit.box.boxId)))
             .flatMap(depositI.deposit(deposit, pool, _))
@@ -52,7 +59,14 @@ object T2TV3 {
         def redeem(
           redeem: RedeemTokenFee,
           pool: CFMMPool
-        ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+        ): F[
+          (
+            ErgoLikeTransaction,
+            Traced[Predicted[CFMMPool]],
+            Traced[Predicted[ResolverOutput]],
+            Option[Traced[Predicted[ResolverOutput]]]
+          )
+        ] =
           resolver.getLatest
             .flatMap(_.orRaise[F](EmptyOutputForDexTokenFee(pool.poolId, redeem.box.boxId)))
             .flatMap(redeemI.redeem(redeem, pool, _))
@@ -60,7 +74,14 @@ object T2TV3 {
         def swap(
           swap: SwapTokenFee,
           pool: CFMMPool
-        ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+        ): F[
+          (
+            ErgoLikeTransaction,
+            Traced[Predicted[CFMMPool]],
+            Traced[Predicted[ResolverOutput]],
+            Option[Traced[Predicted[ResolverOutput]]]
+          )
+        ] =
           resolver.getLatest
             .flatMap(_.orRaise[F](EmptyOutputForDexTokenFee(pool.poolId, swap.box.boxId)))
             .flatMap(swapI.swap(swap, pool, _))

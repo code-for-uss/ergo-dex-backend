@@ -9,8 +9,9 @@ trait TxSubmissionErrorParser {
 
 object TxSubmissionErrorParser {
 
-  val InvalidPoolIndex = 0
-  val InvalidDexOutputIndex = 2
+  val InvalidPoolIndex       = 0
+  val InvalidDexOutputIndex  = 2
+  val InvalidDexyOutputIndex = 1
 
   implicit val default: TxSubmissionErrorParser =
     new TxSubmissionErrorParser {

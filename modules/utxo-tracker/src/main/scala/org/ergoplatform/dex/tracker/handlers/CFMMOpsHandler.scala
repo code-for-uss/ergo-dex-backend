@@ -9,7 +9,7 @@ import mouse.any._
 import org.ergoplatform.ErgoAddressEncoder
 import org.ergoplatform.common.streaming.{Producer, Record}
 import org.ergoplatform.dex.domain.amm._
-import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2T_CFMM, T2T_CFMM}
+import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
 import org.ergoplatform.dex.protocol.amm.ParserVersion
 import org.ergoplatform.dex.tracker.parsers.amm.CFMMOrdersParser
 import org.ergoplatform.dex.tracker.validation.amm.CFMMRules
@@ -69,6 +69,7 @@ object CFMMOpsHandler {
       val parsers =
         CFMMOrdersParser[T2T_CFMM, G, ParserVersion.V1] ::
         CFMMOrdersParser[N2T_CFMM, G, ParserVersion.V1] ::
+        CFMMOrdersParser[N2Dexy_CFMM, G, ParserVersion.V1] ::
         CFMMOrdersParser[T2T_CFMM, G, ParserVersion.V2] ::
         CFMMOrdersParser[N2T_CFMM, G, ParserVersion.V2] ::
         CFMMOrdersParser[T2T_CFMM, G, ParserVersion.V3] ::

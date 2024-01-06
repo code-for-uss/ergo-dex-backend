@@ -42,8 +42,8 @@ object CFMMPoolsHandler {
     logs.forService[CFMMPoolsHandler[F, G, Status]].map { implicit log =>
       val parsers =
         CFMMPoolsParser[T2T_CFMM] ::
-        CFMMPoolsParser[N2T_CFMM] ::
-        CFMMPoolsParser[N2Dexy_CFMM] :: Nil
+        CFMMPoolsParser[N2Dexy_CFMM] ::
+        CFMMPoolsParser[N2T_CFMM] :: Nil
       new CFMMPoolsHandler[F, G, Status](parsers).handler
     }
 }

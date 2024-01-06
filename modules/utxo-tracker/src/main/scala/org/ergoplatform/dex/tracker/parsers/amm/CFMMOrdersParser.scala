@@ -4,9 +4,9 @@ import cats.Monad
 import cats.effect.Clock
 import org.ergoplatform.ErgoAddressEncoder
 import org.ergoplatform.dex.domain.amm.CFMMOrder
-import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2T_CFMM, T2T_CFMM}
+import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
 import org.ergoplatform.dex.protocol.amm.ParserVersion
-import org.ergoplatform.dex.tracker.parsers.amm.v1.{N2TOrdersV1Parser, T2TOrdersV1Parser}
+import org.ergoplatform.dex.tracker.parsers.amm.v1.{N2DexyOrdersV1Parser, N2TOrdersV1Parser, T2TOrdersV1Parser}
 import org.ergoplatform.dex.tracker.parsers.amm.v2.{N2TOrdersV2Parser, T2TOrdersV2Parser}
 import org.ergoplatform.dex.tracker.parsers.amm.v3.{N2TOrdersV3Parser, T2TOrdersV3Parser}
 import org.ergoplatform.ergo.TokenId
@@ -42,6 +42,11 @@ object CFMMOrdersParser {
     e: ErgoAddressEncoder
   ): CFMMOrdersParser[N2T_CFMM, ParserVersion.V1, F] =
     N2TOrdersV1Parser.make[F]
+
+  implicit def v1N2DexyParser[F[_]: Monad: Clock](implicit
+    e: ErgoAddressEncoder
+  ): CFMMOrdersParser[N2Dexy_CFMM, ParserVersion.V1, F] =
+    N2DexyOrdersV1Parser.make[F]
 
   implicit def v2T2TParser[F[_]: Monad: Clock](implicit
     e: ErgoAddressEncoder

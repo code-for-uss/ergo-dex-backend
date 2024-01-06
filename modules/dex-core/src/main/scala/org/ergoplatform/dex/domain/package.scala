@@ -18,9 +18,9 @@ package object domain {
 
   @derive(loggable)
   @newtype
-  final case class DexOperatorOutput(output: Output)
+  final case class ResolverOutput(output: Output)
 
-  object DexOperatorOutput
+  object ResolverOutput
 
   @derive(loggable)
   final case class Price(byX: BigDecimal, byY: BigDecimal)

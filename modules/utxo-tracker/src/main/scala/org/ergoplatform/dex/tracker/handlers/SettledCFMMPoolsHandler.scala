@@ -4,7 +4,7 @@ import cats.{Functor, FunctorFilter, Monad}
 import mouse.any._
 import org.ergoplatform.common.streaming.{Producer, Record}
 import org.ergoplatform.dex.domain.amm.{CFMMPool, PoolId}
-import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2T_CFMM, T2T_CFMM}
+import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
 import org.ergoplatform.dex.tracker.parsers.amm.pools.CFMMPoolsParser
 import org.ergoplatform.ergo.domain.LedgerMetadata
 import org.ergoplatform.ergo.state.ConfirmedIndexed
@@ -41,6 +41,7 @@ object SettledCFMMPoolsHandler {
     logs.forService[SettledCFMMPoolsHandler[F, G]].map { implicit log =>
       val parsers =
         CFMMPoolsParser[T2T_CFMM] ::
+        CFMMPoolsParser[N2Dexy_CFMM] ::
         CFMMPoolsParser[N2T_CFMM] :: Nil
       new SettledCFMMPoolsHandler[F, G](parsers).handler
     }

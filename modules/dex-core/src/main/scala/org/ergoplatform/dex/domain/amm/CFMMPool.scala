@@ -23,6 +23,8 @@ final case class CFMMPool(
 
   val isNative: Boolean = x.isNative || y.isNative
 
+  val isDexy: Boolean = y.id.unwrapped == constants.cfmm.n2dexy.DexyUSDAssetId
+
   def supplyLP: Long = constants.cfmm.TotalEmissionLP - lp.value
 
   // todo: calculate box transition right there.

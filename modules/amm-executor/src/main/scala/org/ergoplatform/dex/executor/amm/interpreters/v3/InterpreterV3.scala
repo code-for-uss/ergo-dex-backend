@@ -3,7 +3,7 @@ package org.ergoplatform.dex.executor.amm.interpreters.v3
 import cats.FlatMap
 import derevo.derive
 import org.ergoplatform.ErgoLikeTransaction
-import org.ergoplatform.dex.domain.DexOperatorOutput
+import org.ergoplatform.dex.domain.ResolverOutput
 import org.ergoplatform.dex.domain.amm.CFMMOrder.{DepositTokenFee, RedeemTokenFee, SwapTokenFee}
 import org.ergoplatform.dex.domain.amm.CFMMPool
 import org.ergoplatform.dex.protocol.amm.AMMType.CFMMType
@@ -22,17 +22,38 @@ trait InterpreterV3[CT <: CFMMType, F[_]] {
   def deposit(
     deposit: DepositTokenFee,
     pool: CFMMPool
-  ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])]
+  ): F[
+    (
+      ErgoLikeTransaction,
+      Traced[Predicted[CFMMPool]],
+      Traced[Predicted[ResolverOutput]],
+      Option[Traced[Predicted[ResolverOutput]]]
+    )
+  ]
 
   def redeem(
     redeem: RedeemTokenFee,
     pool: CFMMPool
-  ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])]
+  ): F[
+    (
+      ErgoLikeTransaction,
+      Traced[Predicted[CFMMPool]],
+      Traced[Predicted[ResolverOutput]],
+      Option[Traced[Predicted[ResolverOutput]]]
+    )
+  ]
 
   def swap(
     swap: SwapTokenFee,
     pool: CFMMPool
-  ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])]
+  ): F[
+    (
+      ErgoLikeTransaction,
+      Traced[Predicted[CFMMPool]],
+      Traced[Predicted[ResolverOutput]],
+      Option[Traced[Predicted[ResolverOutput]]]
+    )
+  ]
 }
 
 object InterpreterV3 {
@@ -42,19 +63,43 @@ object InterpreterV3 {
     def deposit(
       deposit: DepositTokenFee,
       pool: CFMMPool
-    ): Mid[F, (ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+    ): Mid[
+      F,
+      (
+        ErgoLikeTransaction,
+        Traced[Predicted[CFMMPool]],
+        Traced[Predicted[ResolverOutput]],
+        Option[Traced[Predicted[ResolverOutput]]]
+      )
+    ] =
       _ >>= (r => trace"deposit(in=$deposit, pool=$pool) = (${r._1}, ${r._2})" as r)
 
     def redeem(
       redeem: RedeemTokenFee,
       pool: CFMMPool
-    ): Mid[F, (ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+    ): Mid[
+      F,
+      (
+        ErgoLikeTransaction,
+        Traced[Predicted[CFMMPool]],
+        Traced[Predicted[ResolverOutput]],
+        Option[Traced[Predicted[ResolverOutput]]]
+      )
+    ] =
       _ >>= (r => trace"redeem(in=$redeem, pool=$pool) = (${r._1}, ${r._2})" as r)
 
     def swap(
       swap: SwapTokenFee,
       pool: CFMMPool
-    ): Mid[F, (ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+    ): Mid[
+      F,
+      (
+        ErgoLikeTransaction,
+        Traced[Predicted[CFMMPool]],
+        Traced[Predicted[ResolverOutput]],
+        Option[Traced[Predicted[ResolverOutput]]]
+      )
+    ] =
       _ >>= (r => trace"swap(in=$swap, pool=$pool) = (${r._1}, ${r._2})" as r)
   }
 }

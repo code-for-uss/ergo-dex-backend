@@ -2,14 +2,13 @@ package org.ergoplatform.dex.executor.amm.interpreters
 
 import cats.{Functor, Monad}
 import org.ergoplatform.ErgoLikeTransaction
-import org.ergoplatform.dex.domain.DexOperatorOutput
+import org.ergoplatform.dex.domain.ResolverOutput
 import org.ergoplatform.dex.domain.amm.CFMMOrder._
 import org.ergoplatform.dex.domain.amm.CFMMOrderType.{DepositType, RedeemType, SwapType}
-import org.ergoplatform.dex.domain.amm.{CFMMOrder, CFMMPool, PoolId}
+import org.ergoplatform.dex.domain.amm.{CFMMOrder, CFMMPool}
 import org.ergoplatform.dex.executor.amm.interpreters.v1.InterpreterV1
 import org.ergoplatform.dex.executor.amm.interpreters.v3.InterpreterV3
 import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
-import org.ergoplatform.ergo.domain.Output
 import org.ergoplatform.ergo.state.{Predicted, Traced}
 import tofu.higherKind.{Mid, RepresentableK}
 import tofu.logging.{Logging, Logs}
@@ -23,17 +22,38 @@ trait CFMMInterpreter[CT <: CFMMType, F[_]] {
   def deposit(
     in: CFMMOrder.AnyDeposit,
     pool: CFMMPool
-  ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])]
+  ): F[
+    (
+      ErgoLikeTransaction,
+      Traced[Predicted[CFMMPool]],
+      Traced[Predicted[ResolverOutput]],
+      Option[Traced[Predicted[ResolverOutput]]]
+    )
+  ]
 
   def redeem(
     in: CFMMOrder.AnyRedeem,
     pool: CFMMPool
-  ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])]
+  ): F[
+    (
+      ErgoLikeTransaction,
+      Traced[Predicted[CFMMPool]],
+      Traced[Predicted[ResolverOutput]],
+      Option[Traced[Predicted[ResolverOutput]]]
+    )
+  ]
 
   def swap(
     in: CFMMOrder.AnySwap,
     pool: CFMMPool
-  ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])]
+  ): F[
+    (
+      ErgoLikeTransaction,
+      Traced[Predicted[CFMMPool]],
+      Traced[Predicted[ResolverOutput]],
+      Option[Traced[Predicted[ResolverOutput]]]
+    )
+  ]
 }
 
 object CFMMInterpreter {
@@ -66,11 +86,18 @@ object CFMMInterpreter {
     def deposit(
       in: CFMMOrder[DepositType],
       pool: CFMMPool
-    ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+    ): F[
+      (
+        ErgoLikeTransaction,
+        Traced[Predicted[CFMMPool]],
+        Traced[Predicted[ResolverOutput]],
+        Option[Traced[Predicted[ResolverOutput]]]
+      )
+    ] =
       in match {
         case d: DepositErgFee =>
-          if (pool.isNative) n2tV1.deposit(d, pool)
-          else if (pool.poolId == PoolId.fromStringUnsafe("110f9834127df07e142d7386b34a9debd22d3573ab1b751c9825fa8b798acd74")) n2dexyV1.deposit(d, pool)
+          if (pool.isDexy) n2dexyV1.deposit(d, pool)
+          else if (pool.isNative) n2tV1.deposit(d, pool)
           else t2tV1.deposit(d, pool)
         case d: DepositTokenFee => if (pool.isNative) n2tV3.deposit(d, pool) else t2tV3.deposit(d, pool)
       }
@@ -78,11 +105,18 @@ object CFMMInterpreter {
     def redeem(
       in: CFMMOrder[RedeemType],
       pool: CFMMPool
-    ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+    ): F[
+      (
+        ErgoLikeTransaction,
+        Traced[Predicted[CFMMPool]],
+        Traced[Predicted[ResolverOutput]],
+        Option[Traced[Predicted[ResolverOutput]]]
+      )
+    ] =
       in match {
         case r: RedeemErgFee =>
-          if (pool.isNative) n2tV1.redeem(r, pool)
-          else if (pool.poolId == PoolId.fromStringUnsafe("110f9834127df07e142d7386b34a9debd22d3573ab1b751c9825fa8b798acd74")) n2dexyV1.redeem(r, pool)
+          if (pool.isDexy) n2dexyV1.redeem(r, pool)
+          else if (pool.isNative) n2tV1.redeem(r, pool)
           else t2tV1.redeem(r, pool)
         case r: RedeemTokenFee => if (pool.isNative) n2tV3.redeem(r, pool) else t2tV3.redeem(r, pool)
       }
@@ -90,11 +124,18 @@ object CFMMInterpreter {
     def swap(
       in: CFMMOrder[SwapType],
       pool: CFMMPool
-    ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+    ): F[
+      (
+        ErgoLikeTransaction,
+        Traced[Predicted[CFMMPool]],
+        Traced[Predicted[ResolverOutput]],
+        Option[Traced[Predicted[ResolverOutput]]]
+      )
+    ] =
       in match {
         case s: SwapErg =>
-          if (pool.isNative) n2tV1.swap(s, pool)
-          else if (pool.poolId == PoolId.fromStringUnsafe("110f9834127df07e142d7386b34a9debd22d3573ab1b751c9825fa8b798acd74")) n2dexyV1.swap(s, pool)
+          if (pool.isDexy) n2dexyV1.swap(s, pool)
+          else if (pool.isNative) n2tV1.swap(s, pool)
           else t2tV1.swap(s, pool)
         case s: SwapTokenFee => if (pool.isNative) n2tV3.swap(s, pool) else t2tV3.swap(s, pool)
       }
@@ -106,7 +147,15 @@ object CFMMInterpreter {
     def deposit(
       in: AnyDeposit,
       pool: CFMMPool
-    ): Mid[F, (ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+    ): Mid[
+      F,
+      (
+        ErgoLikeTransaction,
+        Traced[Predicted[CFMMPool]],
+        Traced[Predicted[ResolverOutput]],
+        Option[Traced[Predicted[ResolverOutput]]]
+      )
+    ] =
       for {
         _ <- info"deposit(${in.box.boxId}, ${pool.box.boxId})"
         r <- _
@@ -116,7 +165,15 @@ object CFMMInterpreter {
     def redeem(
       in: AnyRedeem,
       pool: CFMMPool
-    ): Mid[F, (ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+    ): Mid[
+      F,
+      (
+        ErgoLikeTransaction,
+        Traced[Predicted[CFMMPool]],
+        Traced[Predicted[ResolverOutput]],
+        Option[Traced[Predicted[ResolverOutput]]]
+      )
+    ] =
       for {
         _ <- info"redeem(${in.box.boxId}, ${pool.box.boxId})"
         r <- _
@@ -126,7 +183,15 @@ object CFMMInterpreter {
     def swap(
       in: AnySwap,
       pool: CFMMPool
-    ): Mid[F, (ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] =
+    ): Mid[
+      F,
+      (
+        ErgoLikeTransaction,
+        Traced[Predicted[CFMMPool]],
+        Traced[Predicted[ResolverOutput]],
+        Option[Traced[Predicted[ResolverOutput]]]
+      )
+    ] =
       for {
         _ <- info"swap(${in.box.boxId}, ${pool.box.boxId})"
         r <- _

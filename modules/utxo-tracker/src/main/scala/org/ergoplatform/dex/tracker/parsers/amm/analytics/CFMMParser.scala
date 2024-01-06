@@ -5,7 +5,7 @@ import cats.data.OptionT
 import org.ergoplatform.dex.domain.amm.CFMMOrder.{DepositErgFee, RedeemErgFee}
 import org.ergoplatform.dex.domain.amm.CFMMVersionedOrder._
 import org.ergoplatform.dex.domain.amm._
-import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2T_CFMM, T2T_CFMM}
+import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
 import org.ergoplatform.dex.protocol.amm.ParserVersion
 import org.ergoplatform.dex.tracker.parsers.amm.CFMMOrdersParser
 import org.ergoplatform.ergo.domain.Output
@@ -32,6 +32,12 @@ object CFMMParser {
     multiAddress: CFMMOrdersParser[N2T_CFMM, ParserVersion.V2, F],
     v0: LegacyContractsParser[N2T_CFMM, F]
   ): CFMMParser[N2T_CFMM, F] = make[N2T_CFMM, F]
+
+  implicit def makeN2DexyCFMMVersionedParser[F[_]: Monad](implicit
+   default: CFMMOrdersParser[N2Dexy_CFMM, ParserVersion.V1, F],
+   multiAddress: CFMMOrdersParser[N2Dexy_CFMM, ParserVersion.V2, F],
+   v0: LegacyContractsParser[N2Dexy_CFMM, F]
+  ): CFMMParser[N2Dexy_CFMM, F] = make[N2Dexy_CFMM, F]
 
   private def make[CT <: CFMMType, F[_]: Monad](implicit
     v0: LegacyContractsParser[CT, F],

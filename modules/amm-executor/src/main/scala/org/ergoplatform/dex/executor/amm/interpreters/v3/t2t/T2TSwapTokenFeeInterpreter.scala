@@ -6,7 +6,7 @@ import cats.syntax.either._
 import org.ergoplatform.dex.configs.MonetaryConfig
 import org.ergoplatform.dex.domain.amm.CFMMOrder._
 import org.ergoplatform.dex.domain.amm.CFMMPool
-import org.ergoplatform.dex.domain.{BoxInfo, DexOperatorOutput, NetworkContext}
+import org.ergoplatform.dex.domain.{BoxInfo, NetworkContext, ResolverOutput}
 import org.ergoplatform.dex.executor.amm.config.ExchangeConfig
 import org.ergoplatform.dex.executor.amm.domain.errors.{ExecutionFailed, IncorrectMultiAddressTree}
 import org.ergoplatform.dex.executor.amm.interpreters.CFMMInterpreterHelpers
@@ -36,7 +36,14 @@ class T2TSwapTokenFeeInterpreter[F[_]: Monad: ExecutionFailed.Raise](
     swap: SwapTokenFee,
     pool: CFMMPool,
     dexFeeOutput: Output
-  ): F[(ErgoLikeTransaction, Traced[Predicted[CFMMPool]], Traced[Predicted[DexOperatorOutput]])] = ref.get.flatMap { ctx =>
+  ): F[
+    (
+      ErgoLikeTransaction,
+      Traced[Predicted[CFMMPool]],
+      Traced[Predicted[ResolverOutput]],
+      Option[Traced[Predicted[ResolverOutput]]]
+    )
+  ] = ref.get.flatMap { ctx =>
     swapParamsTokenFee(swap, pool).toRaise.flatMap { case (baseAmount, quoteAmount, dexFee) =>
       Either
         .catchNonFatal(ErgoTreeSerializer.default.deserialize(swap.params.redeemer))
@@ -99,7 +106,7 @@ class T2TSwapTokenFeeInterpreter[F[_]: Monad: ExecutionFailed.Raise](
           val boxInfo            = BoxInfo(BoxId.fromErgo(nextPoolBox.id), nextPoolBox.value)
           val nextPool           = pool.swap(baseAmount, boxInfo)
           val predictedDexOutput = Output.predicted(Output.fromErgoBox(tx.outputs(2)), dexFeeOutput.boxId)
-          (tx, nextPool, predictedDexOutput)
+          (tx, nextPool, predictedDexOutput, Option.empty)
         }
     }
   }

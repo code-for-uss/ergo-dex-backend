@@ -9,7 +9,7 @@ import org.ergoplatform.ergo.domain.Output
 object N2DexyCFMMPoolsParser extends CFMMPoolsParser[N2Dexy_CFMM] {
 
   def pool(box: Output): Option[CFMMPool] = {
-    val feeNum = 3
+    val feeNum = 997
     for {
       nft <- box.assets.lift(constants.cfmm.n2dexy.IndexNFT)
       lp  <- box.assets.lift(constants.cfmm.n2dexy.IndexLP)

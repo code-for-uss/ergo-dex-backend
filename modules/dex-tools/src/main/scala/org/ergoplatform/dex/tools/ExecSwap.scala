@@ -62,7 +62,7 @@ object ExecSwap extends IOApp with SigmaPlatform {
                       NetworkContext(curHeight, null)
                     )
 
-      (txc, _, _) <- interpreter.swap(order, pool)
+      (txc, _, _, _) <- interpreter.swap(order, pool)
 
       uInputs = txc.inputs.map(i => new UnsignedInput(i.boxId))
       utx     = UnsignedErgoLikeTransaction(uInputs, txc.dataInputs, txc.outputCandidates)
