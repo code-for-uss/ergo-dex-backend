@@ -29,22 +29,24 @@ trait Execution[F[_]] {
 object Execution {
 
   def make[I[_]: Functor, F[_]: Monad: TxFailed.Handle: ExecutionFailed.Handle](implicit
-    pools: CFMMPools[F],
-    interpreter: CFMMInterpreter[CFMMType, F],
-    network: ErgoNetwork[F],
-    resolver: DexOutputResolver[F],
-    dexyResolver: DexyOutputResolver[F],
-    logs: Logs[I, F]
+                                                                                pools: CFMMPools[F],
+                                                                                interpreter: CFMMInterpreter[CFMMType, F],
+                                                                                network: ErgoNetwork[F],
+                                                                                resolver: DexOutputResolver[F],
+                                                                                swapDexyResolver: SwapDexyOutputResolver[F],
+                                                                                depositDexyResolver: DepositDexyOutputResolver[F],
+                                                                                logs: Logs[I, F]
   ): I[Execution[F]] =
     logs.forService[Execution[F]].map(implicit l => new Live[F])
 
   final class Live[F[_]: Monad: TxFailed.Handle: ExecutionFailed.Handle: Logging](implicit
-    pools: CFMMPools[F],
-    interpreter: CFMMInterpreter[CFMMType, F],
-    network: ErgoNetwork[F],
-    resolver: DexOutputResolver[F],
-    dexyResolver: DexyOutputResolver[F],
-    errParser: TxSubmissionErrorParser
+                                                                                  pools: CFMMPools[F],
+                                                                                  interpreter: CFMMInterpreter[CFMMType, F],
+                                                                                  network: ErgoNetwork[F],
+                                                                                  resolver: DexOutputResolver[F],
+                                                                                  swapDexyResolver: SwapDexyOutputResolver[F],
+                                                                                  depositDexyResolver: DepositDexyOutputResolver[F],
+                                                                                  errParser: TxSubmissionErrorParser
   ) extends Execution[F] {
 
     def executeAttempt(order: CFMMOrder.AnyOrder): F[Option[CFMMOrder.AnyOrder]] =
@@ -57,6 +59,7 @@ object Execution {
               case (deposit: CFMMOrder.AnyDeposit, _: CFMMOrderType.DepositType) => interpreter.deposit(deposit, pool)
             }
           }
+          // TODO: add swap dexy resolver
           val executeF =
             for {
               _                                            <- info"Pool is: $pool ${pool.isNative} -> $order "
@@ -64,7 +67,9 @@ object Execution {
               finalizeF = network.submitTransaction(transaction) >> pools.put(nextPool) >> resolver.setPredicted(
                             nextOrder.state.entity.output
                           ) >> {
-                            if (nextDexy.isDefined) dexyResolver.setPredicted(nextDexy.get.state.entity.output)
+                            if (nextDexy.isDefined) {
+                              depositDexyResolver.setPredicted(nextDexy.get.state.entity.output)
+                            }
                             else ???
                           }
               res <- (finalizeF as none[CFMMOrder.AnyOrder])
@@ -88,9 +93,9 @@ object Execution {
                            if (invalidDexOutput)
                              f >> warnCause"Dex output ${output.map(_.boxId)} is invalidated" (e) >>
                              resolver.invalidateAndUpdate as order.some
-                           if (invalidDexyOutput) dexyResolver.getLatest.flatMap { dexyOutput =>
+                           if (invalidDexyOutput) depositDexyResolver.getLatest.flatMap { dexyOutput =>
                              f >> warnCause"Dexy output ${dexyOutput.map(_.boxId)} is invalidated" (e) >>
-                             dexyResolver.invalidateAndUpdate as order.some
+                               depositDexyResolver.invalidateAndUpdate as order.some
                            }
                            if (!invalidPool && !invalidDexOutput && !invalidDexyOutput)
                              f >> warnCause"Order{id=${order.id}} is discarded due to TX error" (e) as none[AnyOrder]

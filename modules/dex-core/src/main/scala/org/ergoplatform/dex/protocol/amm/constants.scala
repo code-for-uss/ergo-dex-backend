@@ -11,6 +11,7 @@ object constants {
     N2TCFMMTemplates.swapBuyV1,
     N2DexyCFMMTemplates.swapBuyV1,
     N2DexyCFMMTemplates.swapSellV1,
+    N2DexyCFMMTemplates.depositV1,
     N2TCFMMTemplates.swapSellLegacyV0,
     N2TCFMMTemplates.swapSellV1,
     N2TCFMMTemplates.depositLegacyV1,
@@ -37,6 +38,7 @@ object constants {
   object cfmm {
 
     val TotalEmissionLP = 0x7fffffffffffffffL
+    val TotalDexyEmissionLP = 100000000000L
     val FeeDenominator  = 1000
 
     object t2t {

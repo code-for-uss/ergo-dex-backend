@@ -16,7 +16,7 @@ import tofu.syntax.logging._
 import tofu.syntax.monadic._
 
 @derive(representableK)
-trait DexyOutputResolver[F[_]] {
+trait DepositDexyOutputResolver[F[_]] {
   def getLatest: F[Option[Output]]
 
   def setPredicted(output: Output): F[Unit]
@@ -24,7 +24,7 @@ trait DexyOutputResolver[F[_]] {
   def invalidateAndUpdate: F[Unit]
 }
 
-object DexyOutputResolver {
+object DepositDexyOutputResolver {
 
   def make[I[_]: Sync, F[_]: Sync](
                                     tokenId: TokenId
@@ -33,8 +33,8 @@ object DexyOutputResolver {
                                     e: ErgoAddressEncoder,
                                     logs: Logs[I, F],
                                     iso: IsoK[F, I]
-                                  ): I[DexyOutputResolver[F]] =
-    logs.forService[DexyOutputResolver[F]].flatMap { implicit __ =>
+                                  ): I[DepositDexyOutputResolver[F]] =
+    logs.forService[DepositDexyOutputResolver[F]].flatMap { implicit __ =>
       Ref.in[I, F, Option[Output]](null).flatMap { ref =>
         iso
           .to(
@@ -45,14 +45,14 @@ object DexyOutputResolver {
               }
           )
           .map { _ =>
-            new Tracing[F] attach new InMemory[F](tokenId, ref): DexyOutputResolver[F]
+            new Tracing[F] attach new InMemory[F](tokenId, ref): DepositDexyOutputResolver[F]
           }
       }
     }
 
   final private class InMemory[F[_]: Monad](tokenId: TokenId, cache: Ref[F, Option[Output]])(implicit
                                                                                              explorer: ErgoExplorer[F]
-  ) extends DexyOutputResolver[F] {
+  ) extends DepositDexyOutputResolver[F] {
     def getLatest: F[Option[Output]] = cache.get
 
     def invalidateAndUpdate: F[Unit] =
@@ -64,7 +64,7 @@ object DexyOutputResolver {
       cache.set(Some(output))
   }
 
-  final private class Tracing[F[_]: Monad: Logging] extends DexyOutputResolver[Mid[F, *]] {
+  final private class Tracing[F[_]: Monad: Logging] extends DepositDexyOutputResolver[Mid[F, *]] {
 
     def getLatest: Mid[F, Option[Output]] =
       for {
