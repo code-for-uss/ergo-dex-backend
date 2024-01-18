@@ -19,7 +19,7 @@ import org.ergoplatform.dex.executor.amm.interpreters.v3.t2t.T2TV3
 import org.ergoplatform.dex.executor.amm.interpreters.CFMMInterpreter
 import org.ergoplatform.dex.executor.amm.processes.{Executor, NetworkContextUpdater}
 import org.ergoplatform.dex.executor.amm.repositories.CFMMPools
-import org.ergoplatform.dex.executor.amm.services.{DexOutputResolver, DexyOutputResolver, Execution}
+import org.ergoplatform.dex.executor.amm.services.{DepositDexyOutputResolver, DexOutputResolver, Execution, SwapDexyOutputResolver}
 import org.ergoplatform.dex.executor.amm.streaming._
 import org.ergoplatform.dex.protocol.amm.AMMType.{CFMMType, N2Dexy_CFMM, N2T_CFMM, T2T_CFMM}
 import org.ergoplatform.ergo.modules.ErgoNetwork
@@ -71,8 +71,10 @@ object App extends EnvApp[AppContext] {
       (networkContextUpdater, context)  <- Resource.eval(NetworkContextUpdater.make[InitF, StreamF, RunF])
       implicit0(resolver: DexOutputResolver[RunF]) <-
         Resource.eval(DexOutputResolver.make[InitF, RunF](configs.exchange))
-      implicit0(swapDexyResolver: DexyOutputResolver[RunF]) <-
-        Resource.eval(DexyOutputResolver.make[InitF, RunF](configs.dexy.swapTokenId))
+      implicit0(swapDexyResolver: SwapDexyOutputResolver[RunF]) <-
+        Resource.eval(SwapDexyOutputResolver.make[InitF, RunF](configs.dexy.swapTokenId))
+      implicit0(depositDexyResolver: DepositDexyOutputResolver[RunF]) <-
+        Resource.eval(DepositDexyOutputResolver.make[InitF, RunF](configs.dexy.depositTokenId))
       implicit0(t2tInt: InterpreterV1[T2T_CFMM, RunF]) <-
         Resource.eval(T2TCFMMInterpreter.make[InitF, RunF])
       implicit0(n2tInt: InterpreterV1[N2T_CFMM, RunF]) <-

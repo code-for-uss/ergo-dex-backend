@@ -27,6 +27,8 @@ final case class CFMMPool(
 
   def supplyLP: Long = constants.cfmm.TotalEmissionLP - lp.value
 
+  def dexySupplyLP: Long = constants.cfmm.TotalDexyEmissionLP - lp.value
+
   // todo: calculate box transition right there.
   def deposit(inX: AssetAmount, inY: AssetAmount, nextBox: BoxInfo): Traced[Predicted[CFMMPool]] = {
     val (unlocked, change) = rewardLP(inX, inY)
@@ -59,16 +61,17 @@ final case class CFMMPool(
   }
 
   def rewardLP(inX: AssetAmount, inY: AssetAmount): (AssetAmount, Option[AssetAmount]) = {
-    val minByX = BigInt(inX.value) * supplyLP / x.value
-    val minByY = BigInt(inY.value) * supplyLP / y.value
+    val supply = if (isDexy) dexySupplyLP else supplyLP
+    val minByX = BigInt(inX.value) * supply / x.value
+    val minByY = BigInt(inY.value) * supply / y.value
     val change =
       if (minByX < minByY) {
         val diff    = minByY - minByX
-        val excessY = diff * y.value / supplyLP
+        val excessY = diff * y.value / supply
         Some(inY.withAmount(excessY))
       } else if (minByX > minByY) {
         val diff    = minByX - minByY
-        val excessX = diff * x.value / supplyLP
+        val excessX = diff * x.value / supply
         Some(inX.withAmount(excessX))
       } else None
     lp.withAmount(math.min(minByX.toLong, minByY.toLong)) -> change
