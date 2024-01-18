@@ -38,6 +38,7 @@
     <logger name="sttp.client3.asynchttpclient" level="INFO"/>
     <root level="INFO">
         <appender-ref ref="ASYNCSTDOUT"/>
+        <appender-ref ref="ASYNCFILE"/>
     </root>
 
 </configuration>
