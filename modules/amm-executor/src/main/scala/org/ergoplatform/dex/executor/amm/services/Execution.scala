@@ -68,7 +68,12 @@ object Execution {
                             nextOrder.state.entity.output
                           ) >> {
                             if (nextDexy.isDefined) {
-                              depositDexyResolver.setPredicted(nextDexy.get.state.entity.output)
+                              order.orderType match {
+                                case _: CFMMOrderType.DepositType =>
+                                  depositDexyResolver.setPredicted(nextDexy.get.state.entity.output)
+                                case _: CFMMOrderType.SwapType =>
+                                  swapDexyResolver.setPredicted(nextDexy.get.state.entity.output)
+                              }
                             }
                             else ???
                           }
@@ -93,9 +98,19 @@ object Execution {
                            if (invalidDexOutput)
                              f >> warnCause"Dex output ${output.map(_.boxId)} is invalidated" (e) >>
                              resolver.invalidateAndUpdate as order.some
-                           if (invalidDexyOutput) depositDexyResolver.getLatest.flatMap { dexyOutput =>
-                             f >> warnCause"Dexy output ${dexyOutput.map(_.boxId)} is invalidated" (e) >>
-                               depositDexyResolver.invalidateAndUpdate as order.some
+                           if (invalidDexyOutput) {
+                             order.orderType match {
+                               case _: CFMMOrderType.DepositType =>
+                                 depositDexyResolver.getLatest.flatMap { dexyOutput =>
+                                   f >> warnCause"Deposit Dexy output ${dexyOutput.map(_.boxId)} is invalidated" (e) >>
+                                     depositDexyResolver.invalidateAndUpdate as order.some
+                                 }
+                               case _: CFMMOrderType.SwapType =>
+                                 swapDexyResolver.getLatest.flatMap { dexyOutput =>
+                                   f >> warnCause"Swap Dexy output ${dexyOutput.map(_.boxId)} is invalidated" (e) >>
+                                     swapDexyResolver.invalidateAndUpdate as order.some
+                                 }
+                             }
                            }
                            if (!invalidPool && !invalidDexOutput && !invalidDexyOutput)
                              f >> warnCause"Order{id=${order.id}} is discarded due to TX error" (e) as none[AnyOrder]

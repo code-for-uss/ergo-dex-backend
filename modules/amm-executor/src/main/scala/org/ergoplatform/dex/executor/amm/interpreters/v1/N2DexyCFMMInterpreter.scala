@@ -115,8 +115,8 @@ final class N2DexyCFMMInterpreter[F[_]: Monad: ExecutionFailed.Raise](
             val nextPoolBox = poolBox1.toBox(tx.id, 0)
             val boxInfo = BoxInfo(BoxId.fromErgo(nextPoolBox.id), nextPoolBox.value)
             val nextPool = pool.deposit(inX, inY, boxInfo)
-            val predictedDexOutput = Output.predicted(Output.fromErgoBox(tx.outputs(2)), dexFeeOutput.boxId)
-            val predictedDexyOutput = Output.predicted(Output.fromErgoBox(tx.outputs(1)), dexFeeOutput.boxId)
+            val predictedDexOutput = Output.predicted(Output.fromErgoBox(tx.outputs(3)), dexFeeOutput.boxId)
+            val predictedDexyOutput = Output.predicted(Output.fromErgoBox(tx.outputs(1)), depositDexyOutput.boxId)
             (tx, nextPool, predictedDexOutput, Option(predictedDexyOutput))
         }
       }
@@ -261,7 +261,7 @@ final class N2DexyCFMMInterpreter[F[_]: Monad: ExecutionFailed.Raise](
                 val boxInfo             = BoxInfo(BoxId.fromErgo(nextPoolBox.id), nextPoolBox.value)
                 val nextPool            = pool.swap(input, boxInfo)
                 val predictedDexOutput  = Output.predicted(Output.fromErgoBox(tx.outputs(3)), dexFeeOutput.boxId)
-                val predictedDexyOutput = Output.predicted(Output.fromErgoBox(tx.outputs(1)), dexFeeOutput.boxId)
+                val predictedDexyOutput = Output.predicted(Output.fromErgoBox(tx.outputs(1)), swapDexyOutput.boxId)
                 // TODO: complete setPredicted for dexy boxes!
                 (tx, nextPool, predictedDexOutput, Some(predictedDexyOutput))
               }
