@@ -58,7 +58,7 @@ object constants {
       val IndexNFT       = 0
       val IndexLP        = 1
       val IndexY         = 2
-      val DexyUSDAssetId = "0d69a552b30df9be519099ec07682039b0610267aaee48d2a1d3dad398287ef5"
+      val DexyUSDAssetId = "68e52efc3a235006e893afcf642a75d4e1e56f8c324b200a4c16d93216d83832"
     }
   }
 }
