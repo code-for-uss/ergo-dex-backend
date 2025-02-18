@@ -45,10 +45,10 @@ final class N2DexyOrdersV1Parser[F[_]: Applicative](ts: Long)(implicit
     val parsed: Option[CFMMOrder.AnyRedeem] =
       if (template == templates.redeemV1) {
         for {
-          poolId      <- tree.constants.parseBytea(11).map(PoolId.fromBytes)
-          maxMinerFee <- tree.constants.parseLong(16)
-          inLP        <- box.assets.lift(0).map(a => AssetAmount(a.tokenId, a.amount))
-          dexFee      <- tree.constants.parseLong(12)
+          poolId      <- tree.constants.parseBytea(13).map(PoolId.fromBytes)
+          maxMinerFee <- tree.constants.parseLong(18)
+          inLP        <- box.assets.lift(10).map(a => AssetAmount(a.tokenId, a.amount))
+          dexFee      <- tree.constants.parseLong(14)
           redeemer    <- tree.constants.parsePk(0).map(pk => PubKey.fromBytes(pk.pkBytes))
           params = RedeemParams(inLP, dexFee, redeemer)
         } yield CFMMOrder.RedeemErgFee(poolId, maxMinerFee, ts, params, box)

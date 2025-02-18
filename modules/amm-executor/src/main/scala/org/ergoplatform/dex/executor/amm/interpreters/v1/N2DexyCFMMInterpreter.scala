@@ -11,7 +11,7 @@ import org.ergoplatform.dex.executor.amm.config.ExchangeConfig
 import org.ergoplatform.dex.executor.amm.domain.errors._
 import org.ergoplatform.dex.executor.amm.interpreters.CFMMInterpreterHelpers
 import InterpreterV1.InterpreterTracing
-import org.ergoplatform.dex.executor.amm.services.{DepositDexyOutputResolver, DexOutputResolver, SwapDexyOutputResolver}
+import org.ergoplatform.dex.executor.amm.services.{DepositDexyOutputResolver, DexOutputResolver, RedeemDexyOutputResolver, SwapDexyOutputResolver}
 import org.ergoplatform.dex.protocol.ErgoTreeSerializer
 import org.ergoplatform.dex.protocol.amm.AMMContracts
 import org.ergoplatform.dex.protocol.amm.AMMType.N2Dexy_CFMM
@@ -38,14 +38,14 @@ final class N2DexyCFMMInterpreter[F[_]: Monad: ExecutionFailed.Raise](
   encoder: ErgoAddressEncoder,
   dexResolver: DexOutputResolver[F],
   swapDexyResolver: SwapDexyOutputResolver[F],
-  depositDexyResolver: DepositDexyOutputResolver[F]
+  depositDexyResolver: DepositDexyOutputResolver[F],
+  redeemDexyResolver: RedeemDexyOutputResolver[F],
 ) extends InterpreterV1[N2Dexy_CFMM, F] {
 
   val helpers = new CFMMInterpreterHelpers(exchange, execution)
 
   import helpers._
 
-  // TODO: should complete deposit and redeem actions
   def deposit(
     deposit: DepositErgFee,
     pool: CFMMPool
@@ -121,6 +121,7 @@ final class N2DexyCFMMInterpreter[F[_]: Monad: ExecutionFailed.Raise](
         }
       }
 
+  // TODO: should complete redeem actions
   def redeem(
     redeem: RedeemErgFee,
     pool: CFMMPool
@@ -134,48 +135,59 @@ final class N2DexyCFMMInterpreter[F[_]: Monad: ExecutionFailed.Raise](
   ] =
     dexResolver.getLatest
       .flatMap(_.orRaise[F](EmptyOutputForDexTokenFee(pool.poolId, redeem.box.boxId)))
-      .map { dexFeeOutput =>
-        val poolBox0         = pool.box
-        val redeemBox        = redeem.box
-        val redeemIn         = new Input(redeemBox.boxId.toErgo, ProverResult.empty)
-        val poolIn           = new Input(poolBox0.boxId.toErgo, ProverResult.empty)
-        val dexFeeIn         = new Input(dexFeeOutput.boxId.toErgo, ProverResult.empty)
-        val inLP             = redeem.params.lp
-        val (shareX, shareY) = pool.shares(inLP)
-        val poolBox1 = new ErgoBoxCandidate(
-          value          = poolBox0.value - shareX.value,
-          ergoTree       = contracts.pool,
-          creationHeight = ctx.currentHeight,
-          additionalTokens = mkPoolTokens(
-            pool,
-            amountLP = pool.lp.value + inLP.value,
-            amountY  = pool.y.value - shareY.value
-          )
-        )
-        val minerFee    = execution.minerFee min redeem.maxMinerFee
-        val minerFeeBox = new ErgoBoxCandidate(minerFee, minerFeeProp, ctx.currentHeight)
-        val dexFee      = redeem.params.dexFee - minerFee
+      .flatMap { dexFeeOutput =>
+        redeemDexyResolver.getLatest.flatMap(_.orRaise[F](EmptyOutputForRedeemDexy(pool.poolId))).map {
+          redeemDexyOutput =>
+            val poolBox0         = pool.box
+            val redeemBox        = redeem.box
+            val redeemIn         = new Input(redeemBox.boxId.toErgo, ProverResult.empty)
+            val poolIn           = new Input(poolBox0.boxId.toErgo, ProverResult.empty)
+            val redeemDexyIn = new Input(redeemDexyOutput.boxId.toErgo, ProverResult.empty)
+            val dexFeeIn         = new Input(dexFeeOutput.boxId.toErgo, ProverResult.empty)
+            val inLP             = redeem.params.lp
+            val (shareX, shareY) = pool.shares(inLP)
+            val poolBox1 = new ErgoBoxCandidate(
+              value          = poolBox0.value - shareX.value,
+              ergoTree       = contracts.pool,
+              creationHeight = ctx.currentHeight,
+              additionalTokens = mkPoolTokens(
+                pool,
+                amountLP = pool.lp.value + inLP.value,
+                amountY  = pool.y.value - shareY.value
+              )
+            )
+            val minerFee    = execution.minerFee min redeem.maxMinerFee
+            val minerFeeBox = new ErgoBoxCandidate(minerFee, minerFeeProp, ctx.currentHeight)
+            val dexFee      = redeem.params.dexFee - minerFee
 
-        val dexFeeBox = new ErgoBoxCandidate(
-          dexFeeOutput.value + dexFee,
-          P2PKAddress(sk.publicImage).script,
-          ctx.currentHeight,
-          additionalTokens = mkTokens(dexFeeOutput.assets.map(asset => asset.tokenId -> asset.amount): _*)
-        )
-        val returnBox = new ErgoBoxCandidate(
-          value            = redeemBox.value + shareX.value - minerFeeBox.value - dexFee,
-          ergoTree         = redeem.params.redeemer.toErgoTree,
-          creationHeight   = ctx.currentHeight,
-          additionalTokens = mkTokens(shareY.id -> shareY.value)
-        )
-        val inputs             = Vector(poolIn, redeemIn, dexFeeIn)
-        val outs               = Vector(poolBox1, returnBox, dexFeeBox, minerFeeBox)
-        val tx                 = ErgoUnsafeProver.prove(UnsignedErgoLikeTransaction(inputs, outs), sk)
-        val nextPoolBox        = poolBox1.toBox(tx.id, 0)
-        val boxInfo            = BoxInfo(BoxId.fromErgo(nextPoolBox.id), nextPoolBox.value)
-        val nextPool           = pool.redeem(inLP, boxInfo)
-        val predictedDexOutput = Output.predicted(Output.fromErgoBox(tx.outputs(2)), dexFeeOutput.boxId)
-        (tx, nextPool, predictedDexOutput, Option.empty)
+            val dexFeeBox = new ErgoBoxCandidate(
+              dexFeeOutput.value + dexFee,
+              P2PKAddress(sk.publicImage).script,
+              ctx.currentHeight,
+              additionalTokens = mkTokens(dexFeeOutput.assets.map(asset => asset.tokenId -> asset.amount): _*)
+            )
+            val returnBox = new ErgoBoxCandidate(
+              value            = redeemBox.value + shareX.value - minerFeeBox.value - dexFee,
+              ergoTree         = redeem.params.redeemer.toErgoTree,
+              creationHeight   = ctx.currentHeight,
+              additionalTokens = mkTokens(shareY.id -> shareY.value)
+            )
+            val redeemDexyBox = new ErgoBoxCandidate(
+              value            = redeemDexyOutput.value,
+              ergoTree         = ErgoTreeSerializer.default.deserialize(redeemDexyOutput.ergoTree),
+              creationHeight   = ctx.currentHeight,
+              additionalTokens = redeemDexyOutput.assets.map(token => (token.tokenId.toErgo, token.amount)).toColl
+            )
+            val inputs = Vector(poolIn, redeemDexyIn, redeemIn, dexFeeIn)
+            val outs = Vector(poolBox1, redeemDexyBox, returnBox, dexFeeBox, minerFeeBox)
+            val tx                 = ErgoUnsafeProver.prove(UnsignedErgoLikeTransaction(inputs, outs), sk)
+            val nextPoolBox        = poolBox1.toBox(tx.id, 0)
+            val boxInfo            = BoxInfo(BoxId.fromErgo(nextPoolBox.id), nextPoolBox.value)
+            val nextPool           = pool.redeem(inLP, boxInfo)
+            val predictedDexOutput = Output.predicted(Output.fromErgoBox(tx.outputs(3)), dexFeeOutput.boxId)
+            val predictedDexyOutput = Output.predicted(Output.fromErgoBox(tx.outputs(1)), redeemDexyOutput.boxId)
+            (tx, nextPool, predictedDexOutput, Option(predictedDexyOutput))
+        }
       }
 
   def swap(
@@ -262,7 +274,6 @@ final class N2DexyCFMMInterpreter[F[_]: Monad: ExecutionFailed.Raise](
                 val nextPool            = pool.swap(input, boxInfo)
                 val predictedDexOutput  = Output.predicted(Output.fromErgoBox(tx.outputs(3)), dexFeeOutput.boxId)
                 val predictedDexyOutput = Output.predicted(Output.fromErgoBox(tx.outputs(1)), swapDexyOutput.boxId)
-                // TODO: complete setPredicted for dexy boxes!
                 (tx, nextPool, predictedDexOutput, Some(predictedDexyOutput))
               }
             }
@@ -286,6 +297,7 @@ object N2DexyCFMMInterpreter {
                                                                                                       dexResolver: DexOutputResolver[F],
                                                                                                       swapDexyResolver: SwapDexyOutputResolver[F],
                                                                                                       depositDexyResolver: DepositDexyOutputResolver[F],
+                                                                                                      redeemDexyResolver: RedeemDexyOutputResolver[F],
                                                                                                       logs: Logs[I, F]
   ): I[InterpreterV1[N2Dexy_CFMM, F]] =
     logs.forService[InterpreterV1[N2Dexy_CFMM, F]].map { implicit l =>

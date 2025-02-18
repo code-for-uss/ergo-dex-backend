@@ -7,6 +7,6 @@ import tofu.Context
 import tofu.logging.derivation.loggable
 
 @derive(pureconfigReader, loggable)
-final case class DexyConfig(swapTokenId: TokenId, depositTokenId: TokenId)
+final case class DexyConfig(swapTokenId: TokenId, depositTokenId: TokenId, redeemTokenId: TokenId)
 
 object DexyConfig extends Context.Companion[DexyConfig]

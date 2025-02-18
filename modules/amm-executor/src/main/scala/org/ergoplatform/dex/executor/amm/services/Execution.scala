@@ -35,6 +35,7 @@ object Execution {
                                                                                 resolver: DexOutputResolver[F],
                                                                                 swapDexyResolver: SwapDexyOutputResolver[F],
                                                                                 depositDexyResolver: DepositDexyOutputResolver[F],
+                                                                                redeemDexyResolver: RedeemDexyOutputResolver[F],
                                                                                 logs: Logs[I, F]
   ): I[Execution[F]] =
     logs.forService[Execution[F]].map(implicit l => new Live[F])
@@ -46,6 +47,7 @@ object Execution {
                                                                                   resolver: DexOutputResolver[F],
                                                                                   swapDexyResolver: SwapDexyOutputResolver[F],
                                                                                   depositDexyResolver: DepositDexyOutputResolver[F],
+                                                                                  redeemDexyResolver: RedeemDexyOutputResolver[F],
                                                                                   errParser: TxSubmissionErrorParser
   ) extends Execution[F] {
 
@@ -73,6 +75,8 @@ object Execution {
                                   depositDexyResolver.setPredicted(nextDexy.get.state.entity.output)
                                 case _: CFMMOrderType.SwapType =>
                                   swapDexyResolver.setPredicted(nextDexy.get.state.entity.output)
+                                case _: CFMMOrderType.RedeemType =>
+                                  redeemDexyResolver.setPredicted(nextDexy.get.state.entity.output)
                               }
                             }
                             else ???
@@ -109,6 +113,11 @@ object Execution {
                                  swapDexyResolver.getLatest.flatMap { dexyOutput =>
                                    f >> warnCause"Swap Dexy output ${dexyOutput.map(_.boxId)} is invalidated" (e) >>
                                      swapDexyResolver.invalidateAndUpdate as order.some
+                                 }
+                               case _: CFMMOrderType.RedeemType =>
+                                 redeemDexyResolver.getLatest.flatMap { dexyOutput =>
+                                   f >> warnCause"Redeem Dexy output ${dexyOutput.map(_.boxId)} is invalidated" (e) >>
+                                     redeemDexyResolver.invalidateAndUpdate as order.some
                                  }
                              }
                            }

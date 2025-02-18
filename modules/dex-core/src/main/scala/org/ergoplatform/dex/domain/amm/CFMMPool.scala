@@ -77,9 +77,15 @@ final case class CFMMPool(
     lp.withAmount(math.min(minByX.toLong, minByY.toLong)) -> change
   }
 
-  def shares(lpIn: AssetAmount): (AssetAmount, AssetAmount) =
-    x.withAmount(BigInt(lpIn.value) * x.value / supplyLP) ->
-    y.withAmount(BigInt(lpIn.value) * y.value / supplyLP)
+  def shares(lpIn: AssetAmount): (AssetAmount, AssetAmount) = {
+    if (isDexy) {
+      x.withAmount(BigInt(lpIn.value) * x.value / dexySupplyLP / 100L * 98L) ->
+        y.withAmount(BigInt(lpIn.value) * y.value / dexySupplyLP / 100L * 98L)
+    } else {
+      x.withAmount(BigInt(lpIn.value) * x.value / supplyLP) ->
+        y.withAmount(BigInt(lpIn.value) * y.value / supplyLP)
+    }
+  }
 
   def outputAmount(input: AssetAmount): AssetAmount = {
     def out(in: AssetAmount, out: AssetAmount) =
